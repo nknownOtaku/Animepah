@@ -64,6 +64,13 @@ const App = () => {
 
   return (
     <div>
+      <div className='flex justify-center mt-2'>
+        <Chip
+          color='secondary'
+          variant="flat"
+          size='lg'
+        >Anime Stream WebSite Released! <Link color='secondary' underline="always" isExternal showAnchorIcon href='https://osstream.vercel.app'>latest version</Link></Chip>
+      </div>
       <div className='mt-4 mb-4'>
         <SearchBar setSearchResult={setSearchResult} setHomeActive={setHomeActive} />
         <div className='flex justify-center mt-4'>
