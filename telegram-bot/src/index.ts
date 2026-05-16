@@ -1,5 +1,9 @@
 import { Telegraf, Context, Markup } from 'telegraf';
 import axios from 'axios';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 // Configuration
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
@@ -23,6 +27,22 @@ interface UserSession {
 }
 
 const userSessions = new Map<number, UserSession>();
+const episodeCache = new Map<string, { animeId: string; sessionId: string }>();
+let episodeCounter = 0;
+
+// Generate short unique ID for episode
+function generateEpisodeId(animeId: string, sessionId: string): string {
+    const shortId = `ep_${++episodeCounter}`;
+    episodeCache.set(shortId, { animeId, sessionId });
+    
+    // Clean old entries if cache gets too large
+    if (episodeCache.size > 1000) {
+        const firstKey = episodeCache.keys().next().value;
+        if (firstKey) episodeCache.delete(firstKey);
+    }
+    
+    return shortId;
+}
 
 // Helper function to get download link for an episode
 async function getEpisodeLinks(animeId: string, sessionId: string): Promise<Array<{ name: string; link: string }>> {
@@ -126,9 +146,10 @@ bot.action(/anime_(.+)/, async (ctx: any) => {
         
         // Create episode buttons (max 15 per page)
         const episodeButtons = episodes.slice(0, 15).map((ep: any) => {
+            const shortId = generateEpisodeId(animeId, ep.session);
             return [Markup.button.callback(
                 `Episode ${ep.episode}`,
-                `ep_${animeId}_${ep.session}`
+                shortId
             )];
         });
 
@@ -192,9 +213,10 @@ bot.action(/next_(.+)_(\d+)/, async (ctx: any) => {
         const episodes = data.episodes || [];
         
         const episodeButtons = episodes.slice(0, 15).map((ep: any) => {
+            const shortId = generateEpisodeId(animeId, ep.session);
             return [Markup.button.callback(
                 `Episode ${ep.episode}`,
-                `ep_${animeId}_${ep.session}`
+                shortId
             )];
         });
 
