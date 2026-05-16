@@ -2,7 +2,7 @@ import { Telegraf, Context, Markup } from 'telegraf';
 import axios from 'axios';
 
 // Configuration
-const BOT_TOKEN = process.env.BOT_TOKEN || '';
+const BOT_TOKEN = process.env.BOT_TOKEN || '8620627512:AAEJ8w7LzZEj5E6ofE9F6FzPhYbJTkP8QBk';
 const WORKER_URL = process.env.WORKER_URL || 'https://anime.apex-cloud.workers.dev';
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0';
 
