@@ -573,19 +573,49 @@ export class AnimePaheScraper {
 
         const links: LinkQuality[] = [];
         
+        // Extract all kwik embed links with their resolution from data-src attributes
+        // Pattern matches: data-src="https://kwik.cx/e/..."
+        const kwikDataSrcRegex = /data-src="(https:\/\/kwik\.cx\/e\/[^"]+)"/g;
+        const dataSrcMatches = [...html.matchAll(kwikDataSrcRegex)];
+        const kwikEmbeds = [...new Set(dataSrcMatches.map(m => m[1].trim()))];
+        
         // Find all download buttons/links
         $('#pickDownload a, .download-option a').each((_, el) => {
             const href = $(el).attr('href');
             const text = $(el).text().trim();
-            const embed = 
-                $(el).attr('data-src') ||
-                $(el).attr('data-embed') ||
-                $(el).attr('data-href') ||
-                '';
-            const normalizedEmbed = normalizeEmbedUrl(embed);
             
             if (href && href.includes('pahe.win')) {
                 const metadata = this.parseLinkMetadata(text);
+                
+                // Find matching embed URL based on resolution/fansub
+                let matchedEmbed = '';
+                const targetRes = metadata.resolution?.replace('p', '') || '';
+                const targetFansub = metadata.fansub || '';
+                const isDub = metadata.isDub;
+                
+                // Try to match embed by parsing the resolution menu buttons
+                $(`#resolutionMenu button[data-src]`).each((_, btnEl) => {
+                    const btnFansub = $(btnEl).attr('data-fansub') || '';
+                    const btnRes = $(btnEl).attr('data-resolution') || '';
+                    const btnAudio = $(btnEl).attr('data-audio') || '';
+                    const btnDataSrc = $(btnEl).attr('data-src') || '';
+                    
+                    const btnIsDub = btnAudio.toLowerCase() === 'eng';
+                    const resMatch = targetRes && btnRes === targetRes;
+                    const fansubMatch = !targetFansub || btnFansub === targetFansub;
+                    const dubMatch = isDub === undefined || isDub === btnIsDub;
+                    
+                    if (resMatch && fansubMatch && dubMatch && btnDataSrc) {
+                        matchedEmbed = btnDataSrc.trim();
+                        return false; // break
+                    }
+                });
+                
+                // Fallback: use first available embed if no match found
+                if (!matchedEmbed && kwikEmbeds.length > 0) {
+                    matchedEmbed = kwikEmbeds[0];
+                }
+                
                 links.push({
                     quality: metadata.quality,
                     size: metadata.size,
@@ -596,7 +626,7 @@ export class AnimePaheScraper {
                     isBD: metadata.isBD,
                     link: href,
                     kwik_url: '',
-                    embed: normalizedEmbed || '',
+                    embed: matchedEmbed,
                     mp4_url: null
                 });
             }
