@@ -1,12 +1,4 @@
 ```
-# Dependencies
-node_modules/
-
-# Logs
-*.log
-
-# Environment variables
-.env
-.env.local
-*.env.*
+# Executables and binaries
+anime
 ```
