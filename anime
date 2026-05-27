@@ -753,7 +753,6 @@ export class AnimePaheScraper {
                     const firstLink = links.find(l => l.mp4_url === null || l.mp4_url === undefined);
                     if (firstLink && !firstLink.mp4_url) {
                         firstLink.mp4_url = embed_mp4;
-                        firstLink.kwik_url = resolved.url || firstLink.kwik_url;
                     }
                     break;
                 }
