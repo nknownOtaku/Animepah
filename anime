@@ -663,34 +663,26 @@ export class AnimePaheScraper {
             }
         });
 
-        // Resolve Kwik URLs and attempt MP4 extraction for each download link
-        // Use Apex resolver with embed FIRST, then fallback to link
+        // Resolve Kwik URLs - use Apex resolver with embed to get direct mp4_url
         for (const item of links) {
             try {
                 let mp4: string | null = null;
 
-                // 1. Try embed (kwik.cx/e)
+                // Use embed (kwik.cx/e) with Apex API to get direct mp4 url
                 if (item.embed) {
                     mp4 = await this.resolveWithApex(item.embed);
                 }
 
-                // 2. fallback: kwik_url from pahe
+                // Fallback: try link if embed didn't work
                 if (!mp4 && item.link) {
                     mp4 = await this.resolveWithApex(item.link);
                 }
 
                 item.mp4_url = mp4;
 
-                if (mp4) {
-                    item.kwik_url = item.embed || item.link;
-                } else {
-                    item.kwik_url = "unresolved";
-                }
-
             } catch (e) {
                 console.error("Apex resolve failed:", e);
                 item.mp4_url = null;
-                item.kwik_url = "error";
             }
         }
 
