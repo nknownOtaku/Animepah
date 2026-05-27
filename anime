@@ -242,6 +242,37 @@ export class AnimePaheScraper {
         };
     }
 
+    private async resolveWithApex(url: string): Promise<string | null> {
+        try {
+            const res = await fetch("https://access-kwik.apex-cloud.workers.dev/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    service: "kwik",
+                    action: "fetch",
+                    auth: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.O0FKaqhJjEZgCAVfZoLz6Pjd7Gs9Kv6qi0P8RyATjaE",
+                    content: {
+                        kwik: url
+                    }
+                })
+            });
+
+            if (!res.ok) return null;
+
+            const data: any = await res.json();
+
+            if (data?.status && data?.content?.url) {
+                return data.content.url;
+            }
+
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     async getAiring(page: number = 1): Promise<AiringResponse> {
         const url = `${this.baseUrl}/api?m=airing&page=${page}`;
         const response = await fetch(url, { headers: this.getHeaders() });
@@ -633,17 +664,32 @@ export class AnimePaheScraper {
         });
 
         // Resolve Kwik URLs and attempt MP4 extraction for each download link
+        // Use Apex resolver with embed FIRST, then fallback to link
         for (const item of links) {
             try {
-                const kwikData = await this.resolveKwikLink(item.link);
-                if (kwikData) {
-                    item.kwik_url = kwikData.url;
-                    item.mp4_url = kwikData.mp4;
+                let mp4: string | null = null;
+
+                // 1. Try embed (kwik.cx/e)
+                if (item.embed) {
+                    mp4 = await this.resolveWithApex(item.embed);
+                }
+
+                // 2. fallback: kwik_url from pahe
+                if (!mp4 && item.link) {
+                    mp4 = await this.resolveWithApex(item.link);
+                }
+
+                item.mp4_url = mp4;
+
+                if (mp4) {
+                    item.kwik_url = item.embed || item.link;
                 } else {
                     item.kwik_url = "unresolved";
                 }
+
             } catch (e) {
-                console.error(`Failed to resolve link ${item.link}:`, e);
+                console.error("Apex resolve failed:", e);
+                item.mp4_url = null;
                 item.kwik_url = "error";
             }
         }
